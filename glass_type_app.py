@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import plot_confusion_matrix, plot_roc_curve, plot_precision_recall_curve
-from sklearn.metrics import precision_score, recall_score 
+from sklearn.metrics import plot_confusion_matrix
 
 # ML classifier Python modules
 from sklearn.svm import SVC
@@ -61,61 +60,71 @@ def prediction(model, ri, na, mg, al, si, k, ca, ba, fe):
     else:
         return "headlamps".upper()
 
-# S4.1: Add title on the main page and in the sidebar.
+# Add title on the main page and in the sidebar.
 st.title("Glass Type Predictor")
-st.sidebar.title("Glass Type Features")
+st.sidebar.title("Exploratory Data Analysis")
 
-# S5.1: Using if statement, display raw data on the click of the checkbox.
+# Using if statement, display raw data on the click of the checkbox.
 if st.sidebar.checkbox("Show raw data"):
-    st.subheader("Glass Type Data set")
+    st.subheader("Full Dataset")
     st.dataframe(glass_df)
 
-# S6.1: Add a multiselect widget to allow the user to select multiple visualisation.
+# Sidebar for scatter plot
+st.sidebar.subheader("Scatter Plot")
+
+# Remove deprecation warning.
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
+# Choosing x-axis values for scatter plots.
+features_list = st.sidebar.multiselect("Select the x-axis values:", 
+                                        ('RI', 'Na', 'Mg', 'Al', 'Si', 'K', 'Ca', 'Ba', 'Fe'))
+# Create scatter plots.
+for feature in features_list:
+    st.subheader(f"Scatter plot between {feature} and GlassType")
+    plt.figure(figsize = (12, 6))
+    sns.scatterplot(x = feature, y = 'GlassType', data = glass_df)
+    st.pyplot()
+
+# Add a multiselect widget to allow the user to select multiple visualisation.
 # Add a subheader in the sidebar with label "Visualisation Selector"
 st.sidebar.subheader("Visualisation Selector")
 
-# Add a multiselect in the sidebar with label 'Select the Charts/Plots:'
-# and with 6 options passed as a tuple ('Correlation Heatmap', 'Line Chart', 'Area Chart', 'Count Plot','Pie Chart', 'Box Plot').
-# Store the current value of this widget in a variable 'plot_list'.
-plot_list = st.sidebar.multiselect("Select the Charts/Plots:", 
-                                    ('Correlation Heatmap', 'Line Chart', 'Area Chart', 
-                                     'Count Plot','Pie Chart', 'Box Plot'))
+# Add a multiselect in the sidebar with label 'Select the charts or plots:'
+# and pass the remaining 6 plot types as a tuple i.e. ('Histogram', 'Box Plot', 'Count Plot', 'Pie Chart', 'Correlation Heatmap', 'Pair Plot').
+# Store the current value of this widget in a variable 'plot_types'.
+plot_types = st.sidebar.multiselect("Select the charts or plots:", 
+                                    ('Histogram', 'Box Plot', 'Count Plot', 'Pie Chart', 'Correlation Heatmap', 'Pair Plot'))
 
 
-# S6.2: Display Streamlit native line chart and area chart
-# Display line chart 
-if 'Line Chart' in plot_list:
-    st.subheader("Line Chart")
-    st.line_chart(glass_df)
-
-# Display area chart    
-if 'Area Chart' in plot_list:
-    st.subheader("Area Chart")
-    st.area_chart(glass_df)
-
-#  Display the plots when the user selects them using multiselect widget.
-
-# import 'seaborn' and 'matplotlib.pyplot' module.
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-st.set_option('deprecation.showPyplotGlobalUse', False)
-
-# Display correlation heatmap using seaborn module and 'st.pyplot()'
-if 'Correlation Heatmap' in plot_list:
-    st.subheader("Correlation Heatmap")
-    plt.figure(figsize = (9, 5))
-    sns.heatmap(glass_df.corr(), annot = True)
+# Display box plot using the 'matplotlib.pyplot' module and the 'st.pyplot()' function.
+if 'Histogram' in plot_types:
+    st.subheader("Histogram")
+    columns = st.sidebar.selectbox("Select the column to create its histogram",
+                                  ('RI', 'Na', 'Mg', 'Al', 'Si', 'K', 'Ca', 'Ba', 'Fe'))
+    # Note: Histogram is generally created for continous values not for discrete values.
+    plt.figure(figsize = (12, 6))
+    plt.title(f"Histogram for {columns}")
+    plt.hist(glass_df[columns], bins = 'sturges', edgecolor = 'black')
     st.pyplot()
 
-# Display count plot using seaborn module and 'st.pyplot()' 
-if 'Count Plot' in plot_list:
+# Create box plot using the 'seaborn' module and the 'st.pyplot()' function.
+if 'Box Plot' in plot_types:
+    st.subheader("Box Plot")
+    columns = st.sidebar.selectbox("Select the column to create its box plot",
+                                  ('RI', 'Na', 'Mg', 'Al', 'Si', 'K', 'Ca', 'Ba', 'Fe', 'GlassType'))
+    plt.figure(figsize = (12, 2))
+    plt.title(f"Box plot for {columns}")
+    sns.boxplot(glass_df[columns])
+    st.pyplot()
+
+# Create count plot using the 'seaborn' module and the 'st.pyplot()' function.
+if 'Count Plot' in plot_types:
     st.subheader("Count plot")
     sns.countplot(x = 'GlassType', data = glass_df)
     st.pyplot()
 
-# Display pie chart using matplotlib module and 'st.pyplot()'   
-if 'Pie Chart' in plot_list:
+# Create a pie chart using the 'matplotlib.pyplot' module and the 'st.pyplot()' function.   
+if 'Pie Chart' in plot_types:
     st.subheader("Pie Chart")
     pie_data = glass_df['GlassType'].value_counts()
     plt.figure(figsize = (5, 5))
@@ -123,13 +132,20 @@ if 'Pie Chart' in plot_list:
             startangle = 30, explode = np.linspace(.06, .16, 6))
     st.pyplot()
 
-# S6.4: Display box plot using matplotlib module and 'st.pyplot()'
-if 'Box Plot' in plot_list:
-    st.subheader("Box Plot")
-    column = st.sidebar.selectbox("Select the column for boxplot",
-                                  ('RI', 'Na', 'Mg', 'Al', 'Si', 'K', 'Ca', 'Ba', 'Fe', 'GlassType'))
-    plt.figure(figsize = (12, 2))
-    sns.boxplot(glass_df[column])
+# Display correlation heatmap using the 'seaborn' module and the 'st.pyplot()' function.
+if 'Correlation Heatmap' in plot_types:
+    st.subheader("Correlation Heatmap")
+    plt.figure(figsize = (10, 6))
+    ax = sns.heatmap(glass_df.corr(), annot = True) # Creating an object of seaborn axis and storing it in 'ax' variable
+    bottom, top = ax.get_ylim() # Getting the top and bottom margin limits.
+    ax.set_ylim(bottom + 0.5, top - 0.5) # Increasing the bottom and decreasing the bottom margins respectively.
+    st.pyplot()
+
+# Display pair plots using the the 'seaborn' module and the 'st.pyplot()' function. 
+if 'Pair Plot' in plot_types:
+    st.subheader("Pair Plots")
+    plt.figure(figsize = (15, 15))
+    sns.pairplot(glass_df)
     st.pyplot()
 
 # Add 9 slider widgets for accepting user input for 9 features.
@@ -155,10 +171,6 @@ classifier = st.sidebar.selectbox("Classifier",
                                  ('Support Vector Machine', 'Random Forest Classifier', 'Logistic Regression'))
 
 # Implement SVM with hyperparameter tuning
-# Import 'plot_confusion_matrix' module.
-from sklearn.metrics import plot_confusion_matrix
-
-
 # if classifier == 'Support Vector Machine', ask user to input the values of 'C','kernel' and 'gamma'.
 if classifier == 'Support Vector Machine':
     st.sidebar.subheader("Model Hyperparameters")
@@ -179,14 +191,14 @@ if classifier == 'Support Vector Machine':
         st.pyplot()
 
 # Random Forest Classifier
-if classifier =='Random Forest Classifier':
+if classifier == 'Random Forest Classifier':
     st.sidebar.subheader("Model Hyperparameters")
     n_estimators_input = st.sidebar.number_input("Number of trees in the forest", 100, 5000, step = 10)
     max_depth_input = st.sidebar.number_input("Maximum depth of the tree", 1, 100, step = 1)
         
     if st.sidebar.button('Classify'):
         st.subheader("Random Forest Classifier")
-        rf_clf= RandomForestClassifier(n_estimators = n_estimators_input, max_depth = max_depth_input, n_jobs = -1)
+        rf_clf = RandomForestClassifier(n_estimators = n_estimators_input, max_depth = max_depth_input, n_jobs = -1)
         rf_clf.fit(X_train,y_train)
         accuracy = rf_clf.score(X_test, y_test)
         glass_type = prediction(rf_clf, ri, na, mg, al, si, k, ca, ba, fe)
@@ -195,11 +207,14 @@ if classifier =='Random Forest Classifier':
         plot_confusion_matrix(rf_clf, X_test, y_test)
         st.pyplot()
 
-if classifier =='Logistic Regression':
+# Implement Logistic Regression with hyperparameter tuning
+if classifier == 'Logistic Regression':
     st.sidebar.subheader("Model Hyperparameters")
     c_value = st.sidebar.number_input("C", 1, 100, step = 1)
-    max_iter_input = st.sidebar.number_input("Maximum iterations", 10, 10000, step = 10)
-        
+    max_iter_input = st.sidebar.number_input("Maximum iterations", 10, 1000, step = 10)
+
+    # If the user clicks the 'Classify' button, perform prediction and display accuracy score and confusion matrix.
+    # This 'if' statement must be inside the above 'if' statement.
     if st.sidebar.button('Classify'):
         st.subheader("Logistic Regression")
         log_reg = LogisticRegression(C = c_value, max_iter = max_iter_input)
